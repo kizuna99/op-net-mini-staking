@@ -104,19 +104,34 @@ function App(){
     if(!amt || amt<=0 || amt>balance) return;
     setBalance(balance-amt);
     setStaked(staked+amt);
-    setHistory([{type:"Stake",amount:amt,date:new Date().toLocaleString()},...history]);
+    setHistory([{
+  type:"Stake",
+  amount:amt,
+  date:new Date().toLocaleString(),
+  tx:"0x"+Math.random().toString(16).slice(2,10)
+},...history]);
     setAmount("");
   }
 
   const simulateReward=()=>{
     const earned=staked*0.01;
     setReward(reward+earned);
-    setHistory([{type:"Reward",amount:earned,date:new Date().toLocaleString()},...history]);
+    setHistory([{
+  type:"Reward",
+  amount:amt,
+  date:new Date().toLocaleString(),
+  tx:"0x"+Math.random().toString(16).slice(2,10)
+},...history]);
   }
 
   const withdraw=()=>{
     setBalance(balance+staked+reward);
-    setHistory([{type:"Withdraw",amount:staked+reward,date:new Date().toLocaleString()},...history]);
+    setHistory([{
+  type:"Withdraw",
+  amount:amt,
+  date:new Date().toLocaleString(),
+  tx:"0x"+Math.random().toString(16).slice(2,10)
+},...history]);
     setStaked(0);
     setReward(0);
   }
@@ -125,11 +140,18 @@ function App(){
     <div className="container">
 
       <div className="header">
-        <div className="logo">OP_STAKE</div>
+  <div>
+    <div className="logo">OP_STAKE</div>
+    <div style={{fontSize:"12px",color:"#9ca3af"}}>
+      Native Bitcoin L1 Staking Protocol — OP_NET Testnet
+    </div>
+  </div>
         {!connected ? 
-          <button className="connect" onClick={connect}>Connect OP_Wallet</button> :
-          <div>Wallet Connected</div>
-        }
+  <button className="connect" onClick={connect}>Connect OP_Wallet</button> :
+  <div style={{fontSize:"12px"}}>
+    bc1q8f3x...92kp • OP_NET
+  </div>
+}
       </div>
 
       {!connected ? (
@@ -152,7 +174,11 @@ function App(){
               <div>{reward.toFixed(4)} BTC</div>
             </div>
           </div>
-
+<div className="card" style={{background:"#1a2238"}}>
+  <div style={{fontSize:"14px",color:"#22c55e"}}>
+    Fixed APY: 12.5% — Rewards accrue per simulation cycle
+  </div>
+</div>
           <div className="card">
             <h3>Stake BTC</h3>
             <input 
@@ -171,7 +197,11 @@ function App(){
             {history.length===0 && <div className="history-item">No transactions yet</div>}
             {history.map((h,i)=>(
               <div key={i} className="history-item">
-                {h.type} {h.amount.toFixed(4)} BTC — {h.date}
+                {h.type} {h.amount.toFixed(4)} BTC  
+<br/>
+<span style={{fontSize:"11px",color:"#6b7280"}}>
+TX: {h.tx} • {h.date}
+</span>
               </div>
             ))}
           </div>

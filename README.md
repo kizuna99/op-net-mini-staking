@@ -1,10 +1,12 @@
 OP_STAKE — Native Bitcoin L1 Staking Dashboard
 
 Overview
+
 OP_STAKE is a simulated native Bitcoin staking interface built for OP_NET vibecoding event.
 The goal is to explore how staking primitives could exist directly on Bitcoin Layer 1 using OP_NET architecture, without token wrapping or external bridges.
 
 Problem
+
 Bitcoin holders currently have limited native yield opportunities without:
 Wrapping BTC
 Using bridges
@@ -12,6 +14,7 @@ Relying on custodial services
 This creates security and trust tradeoffs.
 
 Solution Concept
+
 OP_STAKE demonstrates a simplified staking primitive:
 Native BTC balance simulation
 Fixed APY model
@@ -21,16 +24,25 @@ OP_NET testnet identity framing
 The UI focuses on clarity, simplicity, and DeFi-style transparency.
 
 Key Features
+
 -Wallet connection simulation
+
 -Fixed 12.5% APY model
+
 -30-day performance visualization
+
 -Transaction hash simulation
+
 -Dark mode DeFi dashboard
 
 Built With
+
 -React via CDN
+
 -Chart.js via CDN
+
 -GitHub Pages deployment
+
 
 Vision
 In a full OP_NET implementation, OP_STAKE could evolve into:

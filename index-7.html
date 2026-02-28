@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OP_STAKE — Bitcoin-Native Staking</title>
+
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0b0f1a;
+  color: #e5e7eb;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+}
+
+/* ══════════════════════════════════════════════════
+   LANDING / HERO
+══════════════════════════════════════════════════ */
+.hero-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: radial-gradient(ellipse at 50% 0%, rgba(247,147,26,0.07) 0%, transparent 60%),
+              #0b0f1a;
+  text-align: center;
+}
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(247,147,26,0.1);
+  border: 1px solid rgba(247,147,26,0.3);
+  color: #f7931a;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 20px;
+  margin-bottom: 28px;
+}
+.hero-badge-dot {
+  width: 6px; height: 6px;
+  background: #f7931a;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #f7931a;
+  animation: blink 1.6s infinite;
+}
+.hero-title {
+  font-size: clamp(48px, 10vw, 88px);
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1;
+  background: linear-gradient(135deg, #f7931a 0%, #ffb347 50%, #fff7ed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+.hero-subtitle {
+  font-size: clamp(16px, 3vw, 22px);
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 16px;
+  letter-spacing: -0.3px;
+}
+.hero-desc {
+  max-width: 500px;
+  font-size: 15px;
+  color: #4b5a7a;
+  line-height: 1.7;
+  margin: 0 auto 40px;
+}
+.hero-connect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #f7931a, #e8820f);
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 36px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 0 30px rgba(247,147,26,0.3), 0 8px 24px rgba(0,0,0,0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+  letter-spacing: -0.3px;
+}
+.hero-connect-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 44px rgba(247,147,26,0.45), 0 12px 32px rgba(0,0,0,0.5);
+}
+.hero-stats-row {
+  display: flex;
+  gap: 32px;
+  margin-top: 56px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.hero-stat {
+  text-align: center;
+}
+.hero-stat-val {
+  font-size: 24px;
+  font-weight: 800;
+  color: #f7931a;
+  letter-spacing: -0.5px;
+}
+.hero-stat-lbl {
+  font-size: 11px;
+  color: #4b5a7a;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 3px;
+}
+.hero-divider {
+  width: 1px;
+  background: #1e2a40;
+  align-self: stretch;
+}
+.hero-features {
+  display: flex;
+  gap: 12px;
+  margin-top: 48px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.hero-feature-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #0f1524;
+  border: 1px solid #1e2a40;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 13px;
+  color: #64748b;
+}
+.hero-feature-pill span:first-child { font-size: 15px; }
+
+/* ══════════════════════════════════════════════════
+   DASHBOARD SHELL
+══════════════════════════════════════════════════ */
+.container {
+  max-width: 1040px;
+  margin: auto;
+  padding: 30px 24px 60px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.logo { font-size: 22px; font-weight: bold; color: #f7931a; }
+
+/* ── Shared button base ── */
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+}
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.connect-sm    { background: #f7931a; color: #000; }
+.stake-btn     { background: #22c55e; color: #000; }
+.reward-btn    { background: #3b82f6; color: #fff; }
+.claim-btn     { background: #a855f7; color: #fff; transition: box-shadow 0.2s; }
+.claim-btn:not(:disabled):hover { box-shadow: 0 0 12px rgba(168,85,247,0.55); }
+.withdraw-btn  { background: #ef4444; color: #fff; }
+
+/* ── Cards ── */
+.card { background: #141a2b; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+.card h3 { margin-bottom: 14px; font-size: 15px; color: #e5e7eb; }
+
+/* ── Stats ── */
+.stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.stat { flex: 1; min-width: 130px; background: #1c2236; padding: 15px; border-radius: 8px; }
+.stat-label { font-size: 11px; color: #9ca3af; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-size: 17px; font-weight: bold; color: #f7931a; }
+
+/* TVL card */
+.stat-tvl {
+  flex: 1; min-width: 130px; padding: 15px; border-radius: 8px;
+  background: linear-gradient(135deg, #1a2a1a 0%, #1c2236 100%);
+  border: 1px solid rgba(34,197,94,0.25);
+  position: relative; overflow: hidden;
+}
+.stat-tvl::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(34,197,94,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+.stat-tvl .stat-label { color: #86efac; }
+.stat-tvl .stat-value { color: #22c55e; font-size: 19px; }
+.tvl-delta { font-size: 11px; margin-top: 5px; font-weight: bold; transition: opacity 0.4s; }
+.tvl-delta.up   { color: #22c55e; }
+.tvl-delta.down { color: #f87171; }
+.tvl-delta.flat { opacity: 0; }
+
+/* ── APY Banner ── */
+.apy-banner {
+  background: #1a2238; border-left: 3px solid #22c55e;
+  padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;
+  font-size: 14px; color: #22c55e;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px;
+}
+.apy-live-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(247,147,26,0.1); border: 1px solid rgba(247,147,26,0.35);
+  color: #f7931a; font-size: 13px; font-weight: bold;
+  padding: 4px 12px; border-radius: 20px;
+}
+.apy-live-pill .apy-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #f7931a; box-shadow: 0 0 6px #f7931a;
+  animation: blink 1.6s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Stake Form ── */
+.form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 14px; }
+.form-col { display: flex; flex-direction: column; gap: 4px; }
+.form-col label { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; }
+input[type="number"] {
+  padding: 9px 10px; border-radius: 6px;
+  border: 1px solid #2d3748; background: #0d1117;
+  color: #e5e7eb; width: 140px; font-size: 14px;
+  transition: border-color 0.2s;
+}
+input[type="number"]:focus { outline: none; border-color: #f7931a; }
+input[type="number"].input-error { border-color: #ef4444; }
+select {
+  padding: 9px 12px; border-radius: 6px;
+  border: 1px solid #2d3748; background: #0d1117;
+  color: #e5e7eb; font-size: 14px; font-weight: bold;
+  cursor: pointer; outline: none;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%239ca3af' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  padding-right: 30px; min-width: 200px;
+}
+select:focus { border-color: #f7931a; }
+select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* action buttons row */
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ── Tooltip wrapper ── */
+.tip-wrap { position: relative; display: inline-block; }
+.tip-wrap .tip {
+  display: none; position: absolute;
+  bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: #1c2236; border: 1px solid #2d3a55;
+  color: #f87171; font-size: 11px; font-weight: normal;
+  padding: 5px 10px; border-radius: 6px;
+  white-space: nowrap; pointer-events: none; z-index: 10;
+}
+.tip-wrap:hover .tip { display: block; }
+
+/* ── Lock status box ── */
+.lock-status-box {
+  margin-top: 16px; padding: 14px 16px; border-radius: 8px;
+  border: 1px solid; display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.lock-status-box.locked   { background: rgba(239,68,68,0.05);  border-color: rgba(239,68,68,0.25); }
+.lock-status-box.unlocked { background: rgba(34,197,94,0.05);  border-color: rgba(34,197,94,0.25); }
+.lock-status-box.flexible { background: rgba(59,130,246,0.05); border-color: rgba(59,130,246,0.25); }
+.lock-info-line { font-size: 13px; color: #9ca3af; margin-bottom: 4px; }
+.lock-info-line strong { color: #e5e7eb; }
+.lock-countdown { font-size: 11px; color: #6b7280; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.lock-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: bold; padding: 4px 10px;
+  border-radius: 20px; white-space: nowrap;
+}
+.lock-badge.locked    { background: rgba(239,68,68,0.15);  color: #f87171; }
+.lock-badge.unlocked  { background: rgba(34,197,94,0.15);  color: #22c55e; }
+.lock-badge.flexible  { background: rgba(59,130,246,0.15); color: #60a5fa; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block; font-size: 11px; font-weight: bold;
+  padding: 2px 7px; border-radius: 4px; margin-right: 6px;
+}
+.badge-stake          { background: rgba(34,197,94,0.15);   color: #22c55e; }
+.badge-reward         { background: rgba(59,130,246,0.15);  color: #60a5fa; }
+.badge-claim          { background: rgba(168,85,247,0.15);  color: #c084fc; }
+.badge-withdraw       { background: rgba(239,68,68,0.15);   color: #f87171; }
+.badge-early-withdraw { background: rgba(251,146,60,0.18);  color: #fb923c; }
+
+/* ── History ── */
+.history-item {
+  font-size: 13px; padding: 9px 0;
+  border-bottom: 1px solid #1e2a40; color: #9ca3af;
+}
+.history-item:last-child { border-bottom: none; }
+
+/* ── Chart ── */
+.chart-card { background: #141a2b; padding: 20px 20px 16px; border-radius: 10px; margin-bottom: 20px; }
+.chart-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+}
+.chart-title { font-size: 15px; font-weight: bold; color: #e5e7eb; }
+.chart-pill {
+  font-size: 11px; background: rgba(247,147,26,0.12);
+  border: 1px solid rgba(247,147,26,0.3); color: #f7931a;
+  padding: 3px 10px; border-radius: 20px;
+}
+.chart-wrap { position: relative; width: 100%; height: 220px; }
+
+/* ── Why section ── */
+.why-section { margin-bottom: 28px; }
+.why-heading {
+  font-size: 11px; font-weight: bold; letter-spacing: 2px;
+  text-transform: uppercase; color: #4b5a7a; margin-bottom: 14px;
+}
+.why-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 14px;
+}
+@media(max-width:620px) { .why-grid { grid-template-columns:1fr; } }
+@media(min-width:621px) and (max-width:820px) { .why-grid { grid-template-columns:repeat(2,1fr); } }
+.why-card {
+  background: #0f1524; border: 1px solid #1e2a40;
+  border-radius: 12px; padding: 20px 18px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.25s, transform 0.25s;
+}
+.why-card:hover { border-color: #2e3f60; transform: translateY(-2px); }
+.why-card::before {
+  content: ""; position: absolute; top:0; left:0; right:0;
+  height: 2px; border-radius: 12px 12px 0 0;
+}
+.why-card:nth-child(1)::before { background: linear-gradient(90deg,#f7931a,#ffb347); }
+.why-card:nth-child(2)::before { background: linear-gradient(90deg,#22c55e,#4ade80); }
+.why-card:nth-child(3)::before { background: linear-gradient(90deg,#a855f7,#c084fc); }
+.why-icon  { font-size: 22px; margin-bottom: 12px; display: block; line-height:1; }
+.why-title { font-size: 14px; font-weight: bold; color: #e5e7eb; margin-bottom: 7px; line-height:1.3; }
+.why-desc  { font-size: 12px; color: #64748b; line-height: 1.65; }
+
+/* ══════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+══════════════════════════════════════════════════ */
+.toast-container {
+  position: fixed; top: 20px; right: 20px;
+  display: flex; flex-direction: column; gap: 10px;
+  z-index: 200; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: #111827; border-radius: 10px;
+  padding: 13px 16px; min-width: 260px; max-width: 340px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55);
+  animation: toastIn 0.25s ease;
+  pointer-events: all;
+}
+@keyframes toastIn {
+  from { transform: translateX(60px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.toast.toast-out { animation: toastOut 0.25s ease forwards; }
+@keyframes toastOut {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(60px); opacity: 0; }
+}
+.toast-icon  { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
+.toast-body  { flex: 1; }
+.toast-title { font-size: 13px; font-weight: bold; margin-bottom: 2px; }
+.toast-msg   { font-size: 12px; color: #6b7280; line-height: 1.4; }
+.toast.success { border-left: 3px solid #22c55e; }
+.toast.success .toast-title { color: #22c55e; }
+.toast.error   { border-left: 3px solid #ef4444; }
+.toast.error   .toast-title { color: #f87171; }
+.toast.warning { border-left: 3px solid #f7931a; }
+.toast.warning .toast-title { color: #f7931a; }
+.toast.info    { border-left: 3px solid #3b82f6; }
+.toast.info    .toast-title { color: #60a5fa; }
+.toast-close {
+  background: none; border: none; color: #4b5a7a;
+  font-size: 14px; cursor: pointer; padding: 0;
+  flex-shrink: 0; line-height: 1; font-weight: normal;
+}
+.toast-close:hover { color: #9ca3af; }
+
+/* ══════════════════════════════════════════════════
+   PENALTY MODAL
+══════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(5,8,20,0.82); backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100; animation: fadeIn 0.18s ease;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal {
+  background: #111827; border: 1px solid #ef4444;
+  border-radius: 14px; padding: 28px 28px 24px;
+  max-width: 420px; width: calc(100% - 40px);
+  box-shadow: 0 0 40px rgba(239,68,68,0.15), 0 20px 60px rgba(0,0,0,0.6);
+  animation: slideUp 0.2s ease;
+}
+@keyframes slideUp { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-icon  { font-size: 32px; margin-bottom: 12px; text-align: center; }
+.modal-title { font-size: 17px; font-weight: bold; color: #f87171; text-align: center; margin-bottom: 8px; }
+.modal-body  { font-size: 13px; color: #9ca3af; text-align: center; line-height: 1.65; margin-bottom: 20px; }
+.modal-body strong { color: #e5e7eb; }
+.penalty-box {
+  background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.22);
+  border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px;
+}
+.penalty-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; color: #9ca3af; }
+.penalty-row span:last-child { font-weight: bold; color: #e5e7eb; }
+.penalty-row.loss span:last-child { color: #f87171; }
+.penalty-row.net  span:last-child { color: #22c55e; }
+.modal-actions { display: flex; gap: 10px; }
+.modal-cancel {
+  flex:1; padding:10px; background:#1c2236; border:1px solid #2d3a55;
+  color:#9ca3af; border-radius:8px; font-size:14px; font-weight:bold; cursor:pointer;
+  transition: border-color 0.2s;
+}
+.modal-cancel:hover { border-color:#4b5a7a; color:#e5e7eb; }
+.modal-confirm {
+  flex:1; padding:10px;
+  background: linear-gradient(135deg,#dc2626,#b91c1c);
+  color:#fff; border:none; border-radius:8px;
+  font-size:14px; font-weight:bold; cursor:pointer; opacity:1;
+  transition: opacity 0.2s;
+}
+.modal-confirm:hover { opacity: 0.88; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ══════════════════════════════════════════════════
+   LOCK PERIOD CONFIG  (index 0 = Flexible)
+══════════════════════════════════════════════════ */
+const LOCK_PERIODS = [
+  { label: "Flexible  —  5% APY  (No lock)",  days: 0,  apy: 5,  flexible: true  },
+  { label: "7 Days   — 10% APY",              days: 7,  apy: 10, flexible: false },
+  { label: "30 Days  — 15% APY",              days: 30, apy: 15, flexible: false },
+  { label: "90 Days  — 18% APY",              days: 90, apy: 18, flexible: false },
+];
+const PENALTY_RATE = 0.05;
+
+/* ── Countdown helper ── */
+function timeLeft(ts) {
+  const diff = ts - Date.now();
+  if (diff <= 0) return null;
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000)  / 60000);
+  if (d > 0) return `${d}d ${h}h remaining`;
+  if (h > 0) return `${h}h ${m}m remaining`;
+  return `${m}m remaining`;
+}
+
+/* ══════════════════════════════════════════════════
+   TOAST SYSTEM
+══════════════════════════════════════════════════ */
+function ToastContainer({ toasts, dismiss }) {
+  return (
+    <div className="toast-container">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast ${t.kind} ${t.leaving ? "toast-out" : ""}`}>
+          <span className="toast-icon">{t.icon}</span>
+          <div className="toast-body">
+            <div className="toast-title">{t.title}</div>
+            {t.msg && <div className="toast-msg">{t.msg}</div>}
+          </div>
+          <button className="toast-close" onClick={() => dismiss(t.id)}>✕</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function useToasts() {
+  const [toasts, setToasts] = useState([]);
+
+  const dismiss = useCallback((id) => {
+    setToasts(ts => ts.map(t => t.id === id ? { ...t, leaving: true } : t));
+    setTimeout(() => setToasts(ts => ts.filter(t => t.id !== id)), 280);
+  }, []);
+
+  const toast = useCallback(({ kind = "info", title, msg, icon, duration = 3500 }) => {
+    const id = Date.now() + Math.random();
+    const icons = { success:"✅", error:"❌", warning:"⚠️", info:"ℹ️" };
+    setToasts(ts => [...ts, { id, kind, title, msg, icon: icon || icons[kind], leaving: false }]);
+    setTimeout(() => dismiss(id), duration);
+  }, [dismiss]);
+
+  return { toasts, toast, dismiss };
+}
+
+/* ══════════════════════════════════════════════════
+   TVL ANIMATED COUNTER HOOK
+══════════════════════════════════════════════════ */
+function useTVLCounter(target, duration = 900) {
+  const [display, setDisplay] = useState(target);
+  const [delta,   setDelta]   = useState({ text: "", dir: "flat" });
+  const rafRef  = useRef(null);
+  const fromRef = useRef(target);
+
+  useEffect(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    const startVal = fromRef.current;
+    const diff = target - startVal;
+    if (Math.abs(diff) < 0.000001) return;
+    const sign = diff > 0 ? "+" : "";
+    setDelta({ text: `${sign}${diff.toFixed(4)} BTC`, dir: diff > 0 ? "up" : "down" });
+    const hideTimer = setTimeout(() => setDelta(d => ({ ...d, dir: "flat" })), 2800);
+    const startTime = performance.now();
+    const tick = (now) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased    = 1 - (1 - progress) * (1 - progress);
+      const current  = startVal + diff * eased;
+      fromRef.current = current;
+      setDisplay(current);
+      if (progress < 1) rafRef.current = requestAnimationFrame(tick);
+      else fromRef.current = target;
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); clearTimeout(hideTimer); };
+  }, [target]);
+
+  return { display, delta };
+}
+
+/* ══════════════════════════════════════════════════
+   CHART COMPONENT
+══════════════════════════════════════════════════ */
+function generateChartData(stakedAmt, apy) {
+  const labels = [], values = [];
+  const now = Date.now();
+  const seed = stakedAmt > 0 ? stakedAmt : 0.5;
+  const dailyRate = apy / 100 / 365;
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now - i * 86400000);
+    labels.push(d.toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+    const dayIndex = 29 - i;
+    const growth = seed * Math.pow(1 + dailyRate, dayIndex);
+    const noise  = (Math.random() - 0.48) * seed * 0.004;
+    values.push(Math.max(0, growth + noise));
+  }
+  return { labels, values };
+}
+
+function PerformanceChart({ staked, apy }) {
+  const canvasRef = useRef(null);
+  const chartRef  = useRef(null);
+
+  useEffect(() => {
+    const { labels, values } = generateChartData(staked, apy);
+    if (chartRef.current) chartRef.current.destroy();
+    const ctx = canvasRef.current.getContext("2d");
+    const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+    gradient.addColorStop(0, "rgba(247,147,26,0.35)");
+    gradient.addColorStop(1, "rgba(247,147,26,0.01)");
+    chartRef.current = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: "BTC Value",
+          data: values,
+          borderColor: "#f7931a",
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHoverBackgroundColor: "#f7931a",
+          tension: 0.45,
+          fill: true,
+          backgroundColor: gradient,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "#1c2236", titleColor: "#9ca3af",
+            bodyColor: "#f7931a", borderColor: "#2d3a55", borderWidth: 1, padding: 10,
+            callbacks: { label: ctx => ` ${ctx.parsed.y.toFixed(6)} BTC` }
+          }
+        },
+        scales: {
+          x: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { color: "#6b7280", font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 }, border: { color: "rgba(255,255,255,0.06)" } },
+          y: { grid: { color: "rgba(255,255,255,0.04)" }, ticks: { color: "#6b7280", font: { size: 10 }, callback: v => v.toFixed(4) }, border: { color: "rgba(255,255,255,0.06)" } }
+        }
+      }
+    });
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [staked, apy]);
+
+  return (
+    <div className="chart-card">
+      <div className="chart-header">
+        <div className="chart-title">📈 30-Day BTC Staking Growth</div>
+        <div className="chart-pill">APY {apy}% · Simulated</div>
+      </div>
+      <div className="chart-wrap"><canvas ref={canvasRef}></canvas></div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════
+   LANDING HERO  (shown before wallet connect)
+══════════════════════════════════════════════════ */
+function HeroPage({ onConnect }) {
+  return (
+    <div className="hero-page">
+      <div className="hero-badge">
+        <span className="hero-badge-dot" />
+        OP_NET Testnet · Live
+      </div>
+
+      <h1 className="hero-title">OP_STAKE</h1>
+      <p className="hero-subtitle">Bitcoin-Native Staking Primitive on OP_NET</p>
+      <p className="hero-desc">
+        Stake native BTC directly on Bitcoin Layer&nbsp;1 via OP_NET — no wrapping,
+        no bridges, no custody risk. Earn transparent, on-chain yield with
+        flexible or time-locked positions.
+      </p>
+
+      <button className="hero-connect-btn" onClick={onConnect}>
+        ₿ &nbsp;Connect OP_Wallet
+      </button>
+
+      <div className="hero-stats-row">
+        <div className="hero-stat">
+          <div className="hero-stat-val">125.34 BTC</div>
+          <div className="hero-stat-lbl">Total Value Locked</div>
+        </div>
+        <div className="hero-divider" />
+        <div className="hero-stat">
+          <div className="hero-stat-val">Up to 18%</div>
+          <div className="hero-stat-lbl">Max APY</div>
+        </div>
+        <div className="hero-divider" />
+        <div className="hero-stat">
+          <div className="hero-stat-val">4 Tiers</div>
+          <div className="hero-stat-lbl">Lock Options</div>
+        </div>
+      </div>
+
+      <div className="hero-features">
+        {[
+          ["₿", "Native BTC · No wrapping"],
+          ["🔒", "Flexible or Time-Locked"],
+          ["📊", "Transparent APY Model"],
+          ["⚡", "Instant Reward Claims"],
+          ["🛡", "Early Exit Available"],
+        ].map(([icon, label]) => (
+          <div className="hero-feature-pill" key={label}>
+            <span>{icon}</span>
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════
+   MAIN APP
+══════════════════════════════════════════════════ */
+function App() {
+  const [connected,        setConnected]        = useState(false);
+  const [balance,          setBalance]          = useState(1.0);
+  const [staked,           setStaked]           = useState(0);
+  const [reward,           setReward]           = useState(0);
+  const [amount,           setAmount]           = useState("");
+  const [amountError,      setAmountError]      = useState(false);
+  const [history,          setHistory]          = useState([]);
+  const [tvl,              setTvl]              = useState(125.34);
+  const [lockIndex,        setLockIndex]        = useState(0);
+  const [lockExpiry,       setLockExpiry]       = useState(null);
+  const [showPenaltyModal, setShowPenaltyModal] = useState(false);
+  const [, setTick] = useState(0);
+
+  const { toasts, toast, dismiss } = useToasts();
+  const { display: tvlDisplay, delta: tvlDelta } = useTVLCounter(tvl);
+
+  // Tick every 30s for countdown refresh
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const selectedLock = LOCK_PERIODS[lockIndex];
+  const isFlexible   = selectedLock.flexible;
+  const isLocked     = !isFlexible && lockExpiry !== null && Date.now() < lockExpiry;
+  const isUnlocked   = !isFlexible && lockExpiry !== null && Date.now() >= lockExpiry;
+  const countdown    = lockExpiry && !isFlexible ? timeLeft(lockExpiry) : null;
+  const penaltyAmt   = parseFloat((staked * PENALTY_RATE).toFixed(8));
+  const earlyNet     = parseFloat((staked - penaltyAmt + reward).toFixed(8));
+
+  /* ── Validate amount input, return parsed float or null ── */
+  const parseAmount = () => {
+    const raw = amount.trim();
+    if (!raw) {
+      toast({ kind: "error", title: "Amount required", msg: "Please enter a BTC amount to stake." });
+      setAmountError(true);
+      return null;
+    }
+    const amt = parseFloat(raw);
+    if (isNaN(amt) || amt <= 0) {
+      toast({ kind: "error", title: "Invalid amount", msg: "Amount must be greater than 0." });
+      setAmountError(true);
+      return null;
+    }
+    if (amt > balance) {
+      toast({ kind: "error", title: "Insufficient balance", msg: `You only have ${balance.toFixed(6)} BTC available.` });
+      setAmountError(true);
+      return null;
+    }
+    setAmountError(false);
+    return amt;
+  };
+
+  /* ── Connect ── */
+  const connect = () => {
+    setConnected(true);
+    toast({ kind: "success", title: "Wallet connected", msg: "bc1q8f3x...92kp is now active." });
+  };
+
+  /* ── Stake ── */
+  const stake = () => {
+    if (staked > 0) return;
+    const amt = parseAmount();
+    if (!amt) return;
+
+    const expiry = isFlexible ? null : Date.now() + selectedLock.days * 86400000;
+    setBalance(b => parseFloat((b - amt).toFixed(8)));
+    setStaked(amt);
+    setTvl(t => parseFloat((t + amt).toFixed(8)));
+    setLockExpiry(expiry);
+    setHistory(h => [{
+      type: "Stake", amount: amt,
+      date: new Date().toLocaleString(),
+      tx: "0x" + Math.random().toString(16).slice(2, 10),
+      lockDays: selectedLock.days,
+      apy: selectedLock.apy,
+      lockLabel: isFlexible ? "Flexible" : `${selectedLock.days}d lock`,
+      lockUntil: expiry ? new Date(expiry).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null,
+    }, ...h]);
+    setAmount("");
+    toast({
+      kind: "success",
+      title: `Staked ${amt.toFixed(6)} BTC`,
+      msg: isFlexible
+        ? "Flexible position — withdraw anytime at 5% APY."
+        : `Locked for ${selectedLock.days} days at ${selectedLock.apy}% APY.`
+    });
+  };
+
+  /* ── Simulate Reward ── */
+  const simulateReward = () => {
+    if (staked <= 0) return;
+    const earned = parseFloat((staked * 0.01).toFixed(8));
+    setReward(r => r + earned);
+    setHistory(h => [{
+      type: "Reward", amount: earned,
+      date: new Date().toLocaleString(),
+      tx: "0x" + Math.random().toString(16).slice(2, 10),
+    }, ...h]);
+    toast({ kind: "info", title: "Reward accrued", msg: `+${earned.toFixed(8)} BTC added to rewards.` });
+  };
+
+  /* ── Claim Reward ── */
+  const claimReward = () => {
+    if (reward <= 0) return;
+    const claimed = reward;
+    setBalance(b => parseFloat((b + claimed).toFixed(8)));
+    setReward(0);
+    setHistory(h => [{
+      type: "Claim", amount: claimed,
+      date: new Date().toLocaleString(),
+      tx: "0x" + Math.random().toString(16).slice(2, 10),
+    }, ...h]);
+    toast({ kind: "success", title: "Rewards claimed", msg: `${claimed.toFixed(8)} BTC transferred to wallet.` });
+  };
+
+  /* ── Normal Withdraw (lock expired OR flexible) ── */
+  const withdraw = () => {
+    if (staked <= 0 || isLocked) return;
+    const total = parseFloat((staked + reward).toFixed(8));
+    setBalance(b => parseFloat((b + total).toFixed(8)));
+    setTvl(t => parseFloat((t - staked).toFixed(8)));
+    setHistory(h => [{
+      type: "Withdraw", amount: total,
+      date: new Date().toLocaleString(),
+      tx: "0x" + Math.random().toString(16).slice(2, 10),
+    }, ...h]);
+    setStaked(0); setReward(0); setLockExpiry(null);
+    toast({ kind: "success", title: "Withdrawal complete", msg: `${total.toFixed(8)} BTC returned to wallet.` });
+  };
+
+  /* ── Early Withdraw (locked, 5% penalty) ── */
+  const confirmEarlyWithdraw = () => {
+    setBalance(b => parseFloat((b + earlyNet).toFixed(8)));
+    setTvl(t => parseFloat((t - staked).toFixed(8)));
+    setHistory(h => [{
+      type: "Early Withdraw", amount: earlyNet,
+      penalty: penaltyAmt, principal: staked,
+      date: new Date().toLocaleString(),
+      tx: "0x" + Math.random().toString(16).slice(2, 10),
+    }, ...h]);
+    setStaked(0); setReward(0); setLockExpiry(null);
+    setShowPenaltyModal(false);
+    toast({ kind: "warning", title: "Early withdrawal processed", msg: `Penalty: −${penaltyAmt.toFixed(8)} BTC. Received: ${earlyNet.toFixed(8)} BTC.` });
+  };
+
+  /* ── Badge helper ── */
+  const badgeClass = type =>
+    type === "Stake"          ? "badge-stake"          :
+    type === "Reward"         ? "badge-reward"         :
+    type === "Claim"          ? "badge-claim"          :
+    type === "Early Withdraw" ? "badge-early-withdraw" :
+    "badge-withdraw";
+
+  /* ── Lock status display ── */
+  const lockStatusKind = isFlexible && staked > 0 ? "flexible" : isLocked ? "locked" : "unlocked";
+
+  /* ── Not connected → show Hero ── */
+  if (!connected) return (
+    <>
+      <HeroPage onConnect={connect} />
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
+    </>
+  );
+
+  /* ── Connected → full dashboard ── */
+  return (
+    <div className="container">
+      <ToastContainer toasts={toasts} dismiss={dismiss} />
+
+      {/* Header */}
+      <div className="header">
+        <div>
+          <div className="logo">OP_STAKE</div>
+          <div style={{ fontSize: "12px", color: "#9ca3af", marginTop: 4 }}>
+            Native Bitcoin L1 Staking Protocol — OP_NET Testnet
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: "12px", color: "#9ca3af" }}>
+            <span style={{ color: "#22c55e", marginRight: 6 }}>●</span>
+            bc1q8f3x...92kp
+          </span>
+          <button
+            onClick={() => { setConnected(false); toast({ kind:"info", title:"Wallet disconnected" }); }}
+            style={{ background:"transparent", border:"1px solid #2d3748", color:"#9ca3af", fontSize:"12px", padding:"5px 10px" }}
+          >
+            Disconnect
+          </button>
+        </div>
+      </div>
+
+      {/* Why OP_STAKE */}
+      <div className="why-section">
+        <div className="why-heading">Why OP_STAKE?</div>
+        <div className="why-grid">
+          <div className="why-card">
+            <span className="why-icon">₿</span>
+            <div className="why-title">Native BTC Primitive</div>
+            <div className="why-desc">Staking anchored to Bitcoin Layer 1 via OP_NET, preserving native BTC properties without leaving the base chain.</div>
+          </div>
+          <div className="why-card">
+            <span className="why-icon">⛓️</span>
+            <div className="why-title">No Wrapping / No Bridges</div>
+            <div className="why-desc">Designed without wrapped BTC or external bridges, eliminating cross-chain custody risk and third-party trust.</div>
+          </div>
+          <div className="why-card">
+            <span className="why-icon">📊</span>
+            <div className="why-title">Transparent Yield Logic</div>
+            <div className="why-desc">Fixed and lock-based APY model with on-screen transaction tracking — every accrual, claim and withdrawal is visible.</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="stats">
+        <div className="stat stat-tvl">
+          <div className="stat-label">🌐 Global TVL</div>
+          <div className="stat-value">{tvlDisplay.toFixed(4)} BTC</div>
+          <div className={`tvl-delta ${tvlDelta.dir}`}>{tvlDelta.text}</div>
+        </div>
+        <div className="stat">
+          <div className="stat-label">Wallet Balance</div>
+          <div className="stat-value">{balance.toFixed(6)} BTC</div>
+        </div>
+        <div className="stat">
+          <div className="stat-label">Total Staked</div>
+          <div className="stat-value">{staked.toFixed(6)} BTC</div>
+        </div>
+        <div className="stat">
+          <div className="stat-label">Rewards Earned</div>
+          <div className="stat-value" style={{ color:"#22c55e" }}>{reward.toFixed(8)} BTC</div>
+        </div>
+      </div>
+
+      {/* APY Banner */}
+      <div className="apy-banner">
+        <span>
+          {isFlexible
+            ? "⚡ Flexible Staking — Withdraw anytime, no lock, no penalty"
+            : "🔒 Lock Period Staking — Variable APY based on lock duration"}
+        </span>
+        <span className="apy-live-pill">
+          <span className="apy-dot" />
+          {selectedLock.apy}% APY{isFlexible ? " · Flexible" : ` · ${selectedLock.days}d lock`}
+        </span>
+      </div>
+
+      {/* Chart */}
+      <PerformanceChart staked={staked} apy={selectedLock.apy} />
+
+      {/* Stake Card */}
+      <div className="card">
+        <h3>Stake BTC</h3>
+
+        <div className="form-row">
+          <div className="form-col">
+            <label>Amount</label>
+            <input
+              type="number"
+              value={amount}
+              onChange={e => { setAmount(e.target.value); setAmountError(false); }}
+              placeholder="0.00000000"
+              min="0" step="0.0001"
+              className={amountError ? "input-error" : ""}
+              disabled={staked > 0}
+            />
+          </div>
+          <div className="form-col">
+            <label>Lock Period</label>
+            <select
+              value={lockIndex}
+              onChange={e => setLockIndex(Number(e.target.value))}
+              disabled={staked > 0}
+            >
+              {LOCK_PERIODS.map((lp, i) => (
+                <option key={i} value={i}>{lp.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="btn-row">
+          <button className="stake-btn" onClick={stake} disabled={staked > 0}>
+            Stake
+          </button>
+
+          <button className="reward-btn" onClick={simulateReward} disabled={staked <= 0}>
+            Simulate Reward
+          </button>
+
+          {/* Claim */}
+          <div className="tip-wrap">
+            <button className="claim-btn" onClick={claimReward} disabled={reward <= 0}>
+              ✦ Claim Reward
+            </button>
+            {reward <= 0 && <span className="tip" style={{ color:"#c084fc" }}>No rewards to claim</span>}
+          </div>
+
+          {/* Withdraw */}
+          <div className="tip-wrap">
+            <button
+              className="withdraw-btn"
+              onClick={() => {
+                if (isFlexible || isUnlocked) withdraw();
+                else if (isLocked) setShowPenaltyModal(true);
+              }}
+              disabled={staked <= 0}
+            >
+              {isLocked ? "⚠ Early Withdraw" : "Withdraw All"}
+            </button>
+            {isLocked && <span className="tip">5% early withdrawal penalty applies</span>}
+          </div>
+        </div>
+
+        {/* Lock status panel */}
+        {staked > 0 && (
+          <div className={`lock-status-box ${lockStatusKind}`}>
+            <div>
+              {isFlexible ? (
+                <>
+                  <div className="lock-info-line">Mode: <strong>Flexible</strong> — no lock period</div>
+                  <div className="lock-info-line" style={{ marginTop: 4 }}>
+                    APY: <strong style={{ color:"#3b82f6" }}>5%</strong>
+                    &nbsp;·&nbsp; Withdraw anytime &nbsp;·&nbsp; No penalty
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="lock-info-line">
+                    Locked Until: <strong>
+                      {lockExpiry
+                        ? new Date(lockExpiry).toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric", year:"numeric" })
+                        : "—"}
+                    </strong>
+                  </div>
+                  <div className="lock-info-line" style={{ marginTop: 4 }}>
+                    APY: <strong style={{ color:"#f7931a" }}>{selectedLock.apy}%</strong>
+                    &nbsp;·&nbsp; Period: <strong>{selectedLock.days} days</strong>
+                  </div>
+                  {countdown && <div className="lock-countdown">⏳ {countdown}</div>}
+                  {isUnlocked && <div className="lock-countdown" style={{ color:"#22c55e" }}>✓ Lock expired — ready to withdraw</div>}
+                </>
+              )}
+            </div>
+            <span className={`lock-badge ${lockStatusKind}`}>
+              {isFlexible ? "⚡ Flexible" : isLocked ? "🔒 Locked" : "🔓 Unlocked"}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Transaction History */}
+      <div className="card">
+        <h3>Transaction History</h3>
+        {history.length === 0 && (
+          <div className="history-item" style={{ borderBottom:"none" }}>No transactions yet.</div>
+        )}
+        {history.map((h, i) => (
+          <div key={i} className="history-item">
+            <span className={`badge ${badgeClass(h.type)}`}>{h.type}</span>
+            <strong>{h.amount.toFixed(8)} BTC</strong>
+
+            {h.type === "Stake" && (
+              <span style={{ fontSize:"11px", color:"#f7931a", marginLeft:"8px", fontWeight:"bold" }}>
+                · {h.lockLabel}{h.lockUntil ? ` · ${h.apy}% APY · until ${h.lockUntil}` : ` · ${h.apy}% APY`}
+              </span>
+            )}
+            {h.type === "Claim" && (
+              <span style={{ fontSize:"11px", color:"#c084fc", marginLeft:"8px", fontWeight:"bold" }}>
+                · Transferred to wallet · Principal remains staked
+              </span>
+            )}
+            {h.type === "Early Withdraw" && (
+              <span style={{ fontSize:"11px", color:"#fb923c", marginLeft:"8px", fontWeight:"bold" }}>
+                · Penalty: −{h.penalty.toFixed(8)} BTC · Principal was {h.principal.toFixed(8)} BTC
+              </span>
+            )}
+
+            <br />
+            <span style={{ fontSize:"11px", color:"#6b7280" }}>
+              TX: {h.tx} · {h.date}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Early Withdrawal Penalty Modal */}
+      {showPenaltyModal && (
+        <div className="modal-overlay" onClick={() => setShowPenaltyModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-icon">⚠️</div>
+            <div className="modal-title">Early Withdrawal Penalty</div>
+            <div className="modal-body">
+              Your stake is still locked. Withdrawing now will incur a&nbsp;
+              <strong>5% penalty on your staked principal.</strong>
+            </div>
+            <div className="penalty-box">
+              <div className="penalty-row"><span>Staked Principal</span><span>{staked.toFixed(8)} BTC</span></div>
+              <div className="penalty-row"><span>Accrued Rewards</span><span>+{reward.toFixed(8)} BTC</span></div>
+              <div className="penalty-row loss"><span>Penalty (5%)</span><span>−{penaltyAmt.toFixed(8)} BTC</span></div>
+              <div style={{ borderTop:"1px solid rgba(239,68,68,0.2)", margin:"8px 0 4px" }} />
+              <div className="penalty-row net"><span>You receive</span><span>{earlyNet.toFixed(8)} BTC</span></div>
+            </div>
+            <div className="modal-actions">
+              <button className="modal-cancel" onClick={() => setShowPenaltyModal(false)}>
+                Cancel — Stay Staked
+              </button>
+              <button className="modal-confirm" onClick={confirmEarlyWithdraw}>
+                Confirm Early Withdraw
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

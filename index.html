@@ -1,33 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>OP_STAKE - OP_NET Mini Staking</title>
+<meta charset="UTF-8" />
+<title>OP_STAKE Dashboard</title>
 
-  <!-- React CDN -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <style>
-    body {
-      background:#060810;
-      color:#e2e8f8;
-      font-family:Arial;
-      text-align:center;
-      padding:40px;
-    }
-    button{
-      padding:10px 20px;
-      margin:10px;
-      background:#f7931a;
-      border:none;
-      border-radius:8px;
-      cursor:pointer;
-      font-weight:bold;
-    }
-  </style>
+<style>
+body{
+  margin:0;
+  background:#0b0f1a;
+  color:#e5e7eb;
+  font-family:Arial;
+}
+.container{
+  max-width:1000px;
+  margin:auto;
+  padding:30px;
+}
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:30px;
+}
+.logo{
+  font-size:22px;
+  font-weight:bold;
+  color:#f7931a;
+}
+button{
+  padding:8px 16px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-weight:bold;
+}
+.connect{
+  background:#f7931a;
+}
+.card{
+  background:#141a2b;
+  padding:20px;
+  border-radius:10px;
+  margin-bottom:20px;
+}
+.stats{
+  display:flex;
+  gap:15px;
+  flex-wrap:wrap;
+}
+.stat{
+  flex:1;
+  background:#1c2236;
+  padding:15px;
+  border-radius:8px;
+}
+input{
+  padding:8px;
+  border-radius:6px;
+  border:none;
+  width:120px;
+  margin-right:10px;
+}
+.stake-btn{
+  background:#22c55e;
+}
+.withdraw-btn{
+  background:#ef4444;
+  margin-left:10px;
+}
+.history-item{
+  font-size:14px;
+  margin-bottom:6px;
+  color:#9ca3af;
+}
+</style>
 </head>
 <body>
 
@@ -37,36 +87,80 @@
 
 const { useState } = React;
 
-function App() {
-  const [staked, setStaked] = useState(0);
-  const [reward, setReward] = useState(0);
+function App(){
+  const [connected,setConnected]=useState(false);
+  const [balance,setBalance]=useState(1.0);
+  const [staked,setStaked]=useState(0);
+  const [reward,setReward]=useState(0);
+  const [amount,setAmount]=useState("");
+  const [history,setHistory]=useState([]);
 
-  const stake = () => {
-    const amount = 0.1;
-    setStaked(staked + amount);
-  };
+  const connect=()=>{
+    setConnected(true);
+  }
 
-  const earn = () => {
-    setReward(reward + staked * 0.001);
-  };
+  const stake=()=>{
+    const amt=parseFloat(amount);
+    if(!amt || amt<=0 || amt>balance) return;
+    setBalance(balance-amt);
+    setStaked(staked+amt);
+    setHistory([{type:"Stake",amount:amt,date:new Date().toLocaleString()},...history]);
+    setAmount("");
+  }
 
-  return (
-    <div>
-      <h1>OP_STAKE</h1>
-      <h3>OP_NET Mini Staking Dashboard</h3>
+  const simulateReward=()=>{
+    const earned=staked*0.01;
+    setReward(reward+earned);
+    setHistory([{type:"Reward",amount:earned,date:new Date().toLocaleString()},...history]);
+  }
 
-      <p>Total Staked: {staked} BTC</p>
-      <p>Rewards: {reward.toFixed(6)} BTC</p>
+  const withdraw=()=>{
+    setBalance(balance+staked+reward);
+    setHistory([{type:"Withdraw",amount:staked+reward,date:new Date().toLocaleString()},...history]);
+    setStaked(0);
+    setReward(0);
+  }
 
-      <button onClick={stake}>Stake 0.1 BTC</button>
-      <button onClick={earn}>Simulate Reward</button>
-    </div>
-  );
-}
+  return(
+    <div className="container">
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+      <div className="header">
+        <div className="logo">OP_STAKE</div>
+        {!connected ? 
+          <button className="connect" onClick={connect}>Connect OP_Wallet</button> :
+          <div>Wallet Connected</div>
+        }
+      </div>
 
-</script>
+      {!connected ? (
+        <div className="card">
+          Connect your wallet to start staking BTC on OP_NET.
+        </div>
+      ):(
+        <>
+          <div className="stats">
+            <div className="stat">
+              <div>Wallet Balance</div>
+              <div>{balance.toFixed(4)} BTC</div>
+            </div>
+            <div className="stat">
+              <div>Total Staked</div>
+              <div>{staked.toFixed(4)} BTC</div>
+            </div>
+            <div className="stat">
+              <div>Rewards</div>
+              <div>{reward.toFixed(4)} BTC</div>
+            </div>
+          </div>
 
-</body>
-</html>
+          <div className="card">
+            <h3>Stake BTC</h3>
+            <input 
+              type="number"
+              value={amount}
+              onChange={e=>setAmount(e.target.value)}
+              placeholder="0.1"
+            />
+            <button className="stake-btn" onClick={stake}>Stake</button>
+            <button onClick={simulateReward}>Simulate Reward</button>
+            <button className="withdraw-btn" onClick={
